@@ -66,7 +66,7 @@ class pulmonary_nodules_dataset(object):
             self.candidate_df = None
             self.all_scanID_lst = []
 
-        if _check_filepath(self.testset_file, 'TestSet File'):
+        if _check_filepath(self.testset_file, 'TestSet File', printout=False):
             self.test_scanID_lst = list(
                 set(pd.read_csv(self.testset_file, header=None, sep='\t')[0].values))
             self.train_scanID_lst = [

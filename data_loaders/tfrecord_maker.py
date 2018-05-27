@@ -70,10 +70,9 @@ if __name__ == '__main__':
 
     print("The positive samples number is {}".format(positive_samples_number))
     print("the negative samples number is {}".format(negative_samples_number))
-
     positive_augment_number = 8
     negative_augment_number = 1
-    box = [16, 16, 16]
+    box = [20, 20, 12]
     train_ratio = 0.7
     output_path = './output'
 
@@ -99,9 +98,8 @@ if __name__ == '__main__':
             nodules = nodules_reader_3D(images, mess_lst[i], box)
             nodules = np.expand_dims(nodules, axis=3)
             label = int(mess_lst[i][4])
-            if nodules.shape[-2] < 32:
+            if nodules.shape[-2] < box[2]*2:
                 continue
-            print(label, nodules.shape)
             tf_serialized = tfrecord_string(nodules, label)
 
             if i < edge:
