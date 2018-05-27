@@ -147,7 +147,7 @@ def random_flip_front_end_3D(image, seed=None):
             name=scope)
         return fix_image_flip_shape(image, result)
 
-def random_rotate(image, name=None):
+def random_rotate(image, name=None, seed=None):
     """Rotate image(s) counter-clockwise by 90 degrees.
     Args:
         image: 4-D Tensor of shape `[batch, height, width, channels]` or
@@ -159,6 +159,13 @@ def random_rotate(image, name=None):
     Raises:
         ValueError: if the shape of `image` not supported.
     """ 
-    with ops.name_scope(name, 'random_rotate'[image]) as scope:
+    with ops.name_scope(name, 'random_rotate', [image]) as scope:
         image = ops.convert_to_tensor(image, name='image')
-        math_ops.mod
+        uniform_random = random_ops.random_uniform([], 0, 1.0, seed=seed)
+        mirror_cond = math_ops.less(uniform_random, .5)
+        result = control_flow_ops.cond(
+            mirror_cond,
+            lambda: array_ops.transpose(array_ops.reverse_v2(image, [1]), [1, 0 ,2, 3]),
+            lambda: image,
+            name=scope)
+        return fix_image_flip_shape(image, result)

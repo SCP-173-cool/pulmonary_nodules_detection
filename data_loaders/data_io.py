@@ -13,16 +13,18 @@ import tensorflow as tf
 from image3D_ops import *
 
 
-
-    
-
 def augmentation(image, label):
     image = random_flip_up_down_3D(image)
     image = random_flip_left_right_3D(image)
     image = random_flip_front_end_3D(image)
-    image = tf.random_crop(image, (36,36,20,1))
-    return image, label
+    image = random_rotate(image, name='random_rot')
 
+    image = tf.random_crop(image, (36, 36, 20, 1))
+    image = tf.divide(image, tf.constant(255.0, dtype=tf.float32))
+    image = tf.image.random_contrast(image, 0, 1)
+    image = tf.image.random_brightness(image, 0.3)
+
+    return image, label
 
 
 def parse_function(example_proto):
@@ -31,13 +33,35 @@ def parse_function(example_proto):
         'image_shape': tf.FixedLenFeature(shape=(4, ), dtype=tf.int64),
         'label': tf.FixedLenFeature([], dtype=tf.int64),
     }
-    parsed_example = tf.parse_single_example(example_proto, features = dics)
+    parsed_example = tf.parse_single_example(example_proto, features=dics)
 
     image = tf.reshape(tf.decode_raw(
         parsed_example['image'], tf.uint8), parsed_example['image_shape'])
     label = parsed_example['label']
 
+    image = tf.cast(image, tf.float32)
+
     return image, label
+
+
+def data_loader(tfrecord_lst,
+                num_repeat=1,
+                shuffle=False,
+                batch_size=128,
+                num_processors=4,
+                mode='train',
+                name=""):
+
+    with tf.VariableScope(reuse=False, name=name):
+        dataset = tf.data.TFRecordDataset(filename_lst)
+        new_dataset = dataset.map(
+            parse_function, num_parallel_calls=num_processors)
+        if shuffle:
+            new_dataset = new_dataset.shuffle(buffer_size=100000)
+        new_dataset = new_dataset.repeat(epoch)
+
+
+    return
 
 
 if __name__ == '__main__':
@@ -54,11 +78,10 @@ if __name__ == '__main__':
     sess = tf.InteractiveSession()
     for i in range(22):
         try:
-            image, label = sess.run([next_element])[0]
-            print(label, image.shape)
+            image = sess.run([next_element])
+            print(image)
         except tf.errors.OutOfRangeError:
             break
     writer = tf.summary.FileWriter('test', sess.graph)
     sess.close()
     writer.close()
-
