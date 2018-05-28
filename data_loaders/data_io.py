@@ -13,7 +13,7 @@ import tensorflow as tf
 from image3D_ops import *
 
 
-def augmentation(image, label):
+def augmentation_function(image, label):
     image = random_flip_up_down_3D(image)
     image = random_flip_left_right_3D(image)
     image = random_flip_front_end_3D(image)
@@ -49,37 +49,56 @@ def data_loader(tfrecord_lst,
                 shuffle=False,
                 batch_size=128,
                 num_processors=4,
-                mode='train',
-                name=""):
+                augmentation=False,
+                name="",
+                device='cpu:0'):
 
-    with tf.VariableScope(reuse=False, name=name):
-        dataset = tf.data.TFRecordDataset(filename_lst)
-        new_dataset = dataset.map(
-            parse_function, num_parallel_calls=num_processors)
-        if shuffle:
-            new_dataset = new_dataset.shuffle(buffer_size=100000)
-        new_dataset = new_dataset.repeat(epoch)
+    with tf.variable_scope(name, reuse=False):
+        with tf.device('/{}'.format(device)):
+            dataset = tf.data.TFRecordDataset(tfrecord_lst)
+            new_dataset = dataset.map(
+                parse_function, num_parallel_calls=num_processors)
 
+            if shuffle:
+                new_dataset = new_dataset.shuffle(buffer_size=100000)
+            if augmentation:
+                new_dataset = new_dataset.map(augmentation_function,
+                                    num_parallel_calls=num_processors)
+            new_dataset = new_dataset.repeat(num_repeat)
+            new_dataset = new_dataset.batch(batch_size)
 
-    return
+            iterator = new_dataset.make_one_shot_iterator()
+            next_element = iterator.get_next()
+
+    return next_element
 
 
 if __name__ == '__main__':
-    filename_lst = ['./output/train.tfrecord']
-    dataset = tf.data.TFRecordDataset(filename_lst)
-    new_dataset = dataset.map(parse_function, num_parallel_calls=4)
-    new_dataset = new_dataset.shuffle(buffer_size=100000).repeat(8)
-    new_dataset = new_dataset.map(augmentation, num_parallel_calls=4)
-    new_dataset = new_dataset.batch(4)
+    train_tfrecord_lst = ['/tmp/tfrecord/LUNA/train.tfrecord']
+    test_tfrecord_lst = ['/tmp/tfrecord/LUNA/test.tfrecord']
+    train_loader = data_loader(train_tfrecord_lst,
+                               num_repeat=18,
+                               shuffle=True,
+                               batch_size=64,
+                               num_processors=4,
+                               augmentation=True,
+                               name='train_dataloader')
 
-    iterator = new_dataset.make_one_shot_iterator()
-    next_element = iterator.get_next()
+
+    test_loader = data_loader(test_tfrecord_lst,
+                               num_repeat=1,
+                               shuffle=False,
+                               batch_size=1,
+                               num_processors=4,
+                               augmentation=False,
+                               name='test_dataloader')
+
 
     sess = tf.InteractiveSession()
-    for i in range(22):
+    for i in range(2200):
         try:
-            image = sess.run([next_element])
-            print(image)
+            image, label = sess.run([train_loader])[0]
+            print(sum(label), image.shape)
         except tf.errors.OutOfRangeError:
             break
     writer = tf.summary.FileWriter('test', sess.graph)

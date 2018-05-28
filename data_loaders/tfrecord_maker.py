@@ -41,11 +41,12 @@ def parse_args():
 
     parser.add_argument('--box', type=int, nargs='+', default=[40, 40, 24],
                         help='The fetch box from image_arrays')
-    
+
     parser.add_argument('--train-ratio', type=float, default=0.7,
                         help='The ratio of train set and valid set.')
-    
-    #parser.add_argument('--')
+
+    parser.add_argument('--image-scale', type=float, default=1.,
+                        help='The scale of image datasets')
     args = parser.parse_args()
     return args
 
@@ -77,6 +78,7 @@ def train_maker(args, dataset):
     negative_augment_number = args.train_neg_num
 
     box = args.box
+    scale = args.image_scale
     train_ratio = args.train_ratio
     output_path = os.path.join(args.outpath, args.name)
 
@@ -84,10 +86,13 @@ def train_maker(args, dataset):
         os.path.join(output_path, 'train.tfrecord'))
     valid_writer = tf.python_io.TFRecordWriter(
         os.path.join(output_path, 'valid.tfrecord'))
+    
+    print("Start making TRAIN and VALIDATION tensorflow record.")
+    print("Starting ...\n")
 
     for train_scan_id in dataset.train_scanID_lst[:2]:
         images, resize_factor = dataset.read_images_array(
-            train_scan_id, rescale=1)
+            train_scan_id, rescale=scale)
         message = dataset.read_voxel_labels(train_scan_id, resize_factor)
 
         mess_lst = [i for i in message if i[4] == 1] * positive_augment_number
@@ -112,6 +117,39 @@ def train_maker(args, dataset):
     train_writer.close()
     valid_writer.close()
 
+    print("The TRAIN and VALIDATION tensorflow record are finished.")
+
+
+def test_maker(args, dataset):
+    
+    box = args.box
+    scale = args.image_scale
+    output_path = os.path.join(args.outpath, args.name)
+
+    test_writer = tf.python_io.TFRecordWriter(
+        os.path.join(output_path, 'test.tfrecord'))
+    
+    print("Start making TEST tensorflow record.")
+    print("Starting ...\n")
+
+    for test_scan_id in dataset.test_scanID_lst[:2]:
+        images, resize_factor = dataset.read_images_array(
+            test_scan_id, rescale=scale)
+        message = dataset.read_voxel_labels(test_scan_id, resize_factor)
+
+        for i in range(len(message)):
+            nodules = nodules_reader_3D(images, message[i], box)
+            nodules = np.expand_dims(nodules, axis=3)
+            label = int(message[i][4])
+            if nodules.shape[-2] < box[2]:
+                continue
+            tf_serialized = tfrecord_string(nodules, label)
+
+            test_writer.write(tf_serialized)
+        print('{} is completed.'.format(test_scan_id))
+    
+    test_writer.close()
+    print("The TEST tensorflow record are finished.")
 
 if __name__ == '__main__':
     args = parse_args()
@@ -132,4 +170,4 @@ if __name__ == '__main__':
         os.system('mkdir {}'.format(os.path.join(args.outpath, args.name)))
 
     train_maker(args, dataset)
-    
+    test_maker(args, dataset)
