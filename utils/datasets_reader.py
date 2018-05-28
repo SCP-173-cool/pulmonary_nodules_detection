@@ -269,6 +269,8 @@ def nodules_reader_3D(images_array, coord, box=[22, 22, 22]):
     x = int(round(coord[1]))
     y = int(round(coord[0]))
     z = int(round(coord[2]))
+    box = np.array(box)/2
+    box = box.astype(np.int64)
 
     if images_array.ndim == 3:
         nodules = images_array[x-box[0]:x+box[0],
@@ -370,4 +372,4 @@ if __name__ == "__main__":
     """
     #images2tif(images_new, 'new.gif', duration=0.1)
 
-    #nodules = nodules_reader_3D(images, message[0], box = [22, 22, 22])
+    nodules = nodules_reader_3D(images, message[0], box = [22, 22, 22])

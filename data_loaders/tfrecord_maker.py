@@ -24,15 +24,28 @@ def parse_args():
         description='Create tensorflow record files \
         to make the project database')
 
-    parser.add_argument('--outpath',
-                        help='The direction of tfrecord output path')
-
     parser.add_argument('--dataset-path',
                         help='The direction of dataset path')
 
-    parser.add_argument('--mode', default='train',
-                        help='the type of database')
+    parser.add_argument('--name', default='untitled',
+                        help='The tfrecord dataset name')
 
+    parser.add_argument('--outpath', default='/tmp/tfrecord',
+                        help='The direction of tfrecord output path.')
+
+    parser.add_argument('--train-pos-num', type=int, default=1,
+                        help='The number of Positive samples augmentation')
+
+    parser.add_argument('--train-neg-num', type=int, default=1,
+                        help='The number of Negative samples augmentation')
+
+    parser.add_argument('--box', type=int, nargs='+', default=[40, 40, 24],
+                        help='The fetch box from image_arrays')
+    
+    parser.add_argument('--train-ratio', type=float, default=0.7,
+                        help='The ratio of train set and valid set.')
+    
+    #parser.add_argument('--')
     args = parser.parse_args()
     return args
 
@@ -58,26 +71,15 @@ def tfrecord_string(image, label):
     return tf_serialized
 
 
-if __name__ == '__main__':
-    args = parse_args()
+def train_maker(args, dataset):
 
-    dataset = pulmonary_nodules_dataset(args.dataset_path)
-    dataset.check_all()
-    positive_samples_number = len(
-        dataset.candidate_df[dataset.candidate_df[5] == 1])
-    negative_samples_number = len(
-        dataset.candidate_df[dataset.candidate_df[5] == 0])
+    positive_augment_number = args.train_pos_num
+    negative_augment_number = args.train_neg_num
 
-    print("The positive samples number is {}".format(positive_samples_number))
-    print("the negative samples number is {}".format(negative_samples_number))
-    positive_augment_number = 8
-    negative_augment_number = 1
-    box = [20, 20, 12]
-    train_ratio = 0.7
-    output_path = './output'
+    box = args.box
+    train_ratio = args.train_ratio
+    output_path = os.path.join(args.outpath, args.name)
 
-    if not os.path.exists(output_path):
-        os.system('mkdir {}'.format(output_path))
     train_writer = tf.python_io.TFRecordWriter(
         os.path.join(output_path, 'train.tfrecord'))
     valid_writer = tf.python_io.TFRecordWriter(
@@ -98,7 +100,7 @@ if __name__ == '__main__':
             nodules = nodules_reader_3D(images, mess_lst[i], box)
             nodules = np.expand_dims(nodules, axis=3)
             label = int(mess_lst[i][4])
-            if nodules.shape[-2] < box[2]*2:
+            if nodules.shape[-2] < box[2]:
                 continue
             tf_serialized = tfrecord_string(nodules, label)
 
@@ -109,3 +111,25 @@ if __name__ == '__main__':
         print('{} is completed.'.format(train_scan_id))
     train_writer.close()
     valid_writer.close()
+
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    dataset = pulmonary_nodules_dataset(args.dataset_path)
+    dataset.check_all()
+    positive_samples_number = len(
+        dataset.candidate_df[dataset.candidate_df[5] == 1])
+    negative_samples_number = len(
+        dataset.candidate_df[dataset.candidate_df[5] == 0])
+
+    print("The positive samples number is {}".format(positive_samples_number))
+    print("the negative samples number is {}".format(negative_samples_number))
+
+    if not os.path.exists(args.outpath):
+        os.system('mkdir {}'.format(args.outpath))
+    if not os.path.exists(os.path.join(args.outpath, args.name)):
+        os.system('mkdir {}'.format(os.path.join(args.outpath, args.name)))
+
+    train_maker(args, dataset)
+    
