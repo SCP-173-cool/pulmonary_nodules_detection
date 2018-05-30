@@ -40,6 +40,7 @@ def parse_function(example_proto):
     label = parsed_example['label']
 
     image = tf.cast(image, tf.float32)
+    label = tf.cast(label, tf.float32)
 
     return image, label
 
@@ -70,6 +71,7 @@ def data_loader(tfrecord_lst,
             iterator = new_dataset.make_one_shot_iterator()
             next_element = iterator.get_next()
 
+    #return 
     return next_element
 
 
