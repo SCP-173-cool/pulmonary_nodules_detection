@@ -27,7 +27,7 @@ test_tfrecord_lst = ['./output/LUNA/test.tfrecord']
 train_loader = data_loader(train_tfrecord_lst,
                            num_repeat=12,
                            shuffle=True,
-                           batch_size=1,
+                           batch_size=2,
                            num_processors=4,
                            augmentation=True,
                            name='train_dataloader')
@@ -80,19 +80,6 @@ for i in range(12):
     _, loss = sess.run([train_op, model.loss], feed_dict=train_feed)
     print(loss)
 
-    if (i+1) % 10 == 0:
-        valid_loss_lst = []
-        while True:
-            try:
-                image_batch, label_batch = sess.run([valid_loader])[0]
-                valid_feed = {model.image: image_batch,
-                            model.label: label_batch}
-                valid_loss = sess.run(model.loss, feed_dict=valid_feed)
-                valid_loss_lst.append(valid_loss)
-            except tf.errors.OutOfRangeError:
-                break
-
-        print('valid_loss: {}'.format(sum(valid_loss_lst)/len(valid_loss_lst)))
             
 
 

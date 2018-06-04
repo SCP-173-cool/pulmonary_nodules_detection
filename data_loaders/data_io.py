@@ -68,20 +68,20 @@ def data_loader(tfrecord_lst,
             new_dataset = new_dataset.repeat(num_repeat)
             new_dataset = new_dataset.batch(batch_size)
 
-            iterator = new_dataset.make_one_shot_iterator()
-            next_element = iterator.get_next()
+            iterator = new_dataset.make_initializable_iterator()
+            #next_element = iterator.get_next()
 
     #return 
-    return next_element
+    return iterator
 
 
 if __name__ == '__main__':
-    train_tfrecord_lst = ['/tmp/tfrecord/LUNA/train.tfrecord']
-    test_tfrecord_lst = ['/tmp/tfrecord/LUNA/test.tfrecord']
+    train_tfrecord_lst = ['../output/LUNA/train.tfrecord']
+    test_tfrecord_lst = ['../output/LUNA/test.tfrecord']
     train_loader = data_loader(train_tfrecord_lst,
-                               num_repeat=18,
+                               num_repeat=1,
                                shuffle=True,
-                               batch_size=64,
+                               batch_size=1024,
                                num_processors=4,
                                augmentation=True,
                                name='train_dataloader')
@@ -97,12 +97,14 @@ if __name__ == '__main__':
 
 
     sess = tf.InteractiveSession()
+    sess.run(train_loader.initializer)
     for i in range(2200):
         try:
-            image, label = sess.run([train_loader])[0]
+            image, label = sess.run([train_loader.get_next()])[0]
             print(sum(label), image.shape)
         except tf.errors.OutOfRangeError:
-            break
+            print 'OOR'
+            sess.run(train_loader.initializer)
     writer = tf.summary.FileWriter('test', sess.graph)
     sess.close()
     writer.close()

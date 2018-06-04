@@ -48,7 +48,7 @@ class MODEL(object):
                 labels=self.label, logits=self.y_)
             self.likelihood_loss = tf.reduce_mean(self.likelihood_loss)
 
-            self.loss = self.likelihood_loss + self.negative_feature_loss
+            self.all_loss = self.likelihood_loss + self.negative_feature_loss
 
 
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         try:
             image, label = sess.run([train_loader])[0]
             feed_dict = {model.image: image, model.label: label}
-            loss, prob = sess.run([model.loss, model.probability], feed_dict=feed_dict)
+            loss, prob = sess.run([model.all_loss, model.probability], feed_dict=feed_dict)
             print(loss, prob)
         except tf.errors.OutOfRangeError:
             break
