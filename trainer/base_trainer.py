@@ -8,7 +8,9 @@ Created on Fri May 18 23:52:46 2018
 
 import sys
 import os
+sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.abspath('../'))
+from data_loaders.data_io import data_loader
 
 import tensorflow as tf
 
@@ -17,7 +19,9 @@ class trainer(object):
     def __init__(self, sess, config):
         self.sess = sess
         self.config = config
-
+    
+    def input_data(self):
+        train_loader = data_loader()
 
 class Save_and_load_mode(object):
     def __init__(self, logdir, sess):
