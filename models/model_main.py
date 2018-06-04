@@ -8,38 +8,25 @@ Created on Fri May 18 23:52:46 2018
 
 import sys
 sys.dont_write_bytecode = True
-sys.path.insert(0, '../data_loaders')
-
 import tensorflow as tf
 from alexnet import alexnet
 import numpy as np
-
-from data_io import data_loader
 
 
 class MODEL(object):
 
     def __init__(self, 
                 input_shape, 
-                num_channel,
-                data_loader=None):
+                num_channel):
         self.input_shape = input_shape
         self.num_channel = num_channel
         self.image_shape = [None]+self.input_shape+[self.num_channel]
-        self.data_loader = data_loader
 
     def build_model(self):
         with tf.variable_scope("input_block"):
             
-            if self.data_loader is None:
-                self.image = tf.placeholder(tf.float32,
-                                            shape=self.image_shape, name='image1')
-
-                self.label = tf.placeholder(tf.float32, shape=None, name='label')
-            
-            else:
-                self.image, self.label = self.data_loader
-        
+            self.image = tf.placeholder(tf.float32, shape=self.image_shape, name='image')
+            self.label = tf.placeholder(tf.float32, shape=None, name='label')
 
         with tf.variable_scope("feature"):
             self.feature = alexnet(self.image)
@@ -59,34 +46,35 @@ class MODEL(object):
                 tf.reduce_sum(tf.square(self.output), axis=1) * (1 - self.label))
             self.likelihood_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 labels=self.label, logits=self.y_)
+            self.likelihood_loss = tf.reduce_mean(self.likelihood_loss)
 
             self.loss = self.likelihood_loss + self.negative_feature_loss
 
-        with tf.variable_scope("control_params"):
-            self.init = tf.global_variables_initializer()
 
 
 if __name__ == '__main__':
-
+    sys.path.insert(0, '../data_loaders')
+    from data_io import data_loader
 
     train_tfrecord_lst = ['../output/LUNA/train.tfrecord']
     train_loader = data_loader(train_tfrecord_lst,
                                num_repeat=1,
                                shuffle=True,
-                               batch_size=1,
+                               batch_size=2,
                                num_processors=4,
                                augmentation=True,
                                name='train_dataloader')
-    model = MODEL([36, 36, 20], 1, data_loader=train_loader)
+    model = MODEL([36, 36, 20], 1)
     model.build_model()
 
     sess = tf.Session()
-    sess.run(model.init)
+    sess.run(tf.global_variables_initializer())
 
     for i in range(22):
         try:
-            #image, label = sess.run([train_loader])[0]
-            loss, prob = sess.run([model.loss, model.probability])
+            image, label = sess.run([train_loader])[0]
+            feed_dict = {model.image: image, model.label: label}
+            loss, prob = sess.run([model.loss, model.probability], feed_dict=feed_dict)
             print(loss, prob)
         except tf.errors.OutOfRangeError:
             break

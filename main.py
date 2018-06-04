@@ -11,6 +11,9 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, 'data_loaders')
 sys.path.insert(0, 'models')
 
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+
 from models.model_main import MODEL
 from data_loaders.data_io import data_loader
 
@@ -34,7 +37,7 @@ valid_loader = data_loader(valid_tfrecord_lst,
                            shuffle=False,
                            batch_size=1,
                            num_processors=4,
-                           augmentation=False,
+                           augmentation=True,
                            name='valid_dataloader')
 
 test_loader = data_loader(test_tfrecord_lst,
@@ -45,9 +48,8 @@ test_loader = data_loader(test_tfrecord_lst,
                            augmentation=False,
                            name='test_dataloader')
 
-model = MODEL([36, 36, 20], 1, data_loader=train_loader)
-with tf.device("/cpu:0"):
-    model.build_model()
+model = MODEL([36, 36, 20], 1)
+model.build_model()
 
 
 
@@ -71,7 +73,27 @@ global_iteration_count = 0
 
 for i in range(12):
 
-    _, cost, prob, label = sess.run([train_op, model.loss, model.probability, model.label],
-                                              feed_dict={learning_rate_placeholder: 0.1})
-    print(cost, prob, label)
+    image_batch, label_batch = sess.run([train_loader])[0]
+    train_feed = {model.image: image_batch, 
+                  model.label: label_batch,
+                  learning_rate_placeholder: 0.001}
+    _, loss = sess.run([train_op, model.loss], feed_dict=train_feed)
+    print(loss)
+
+    if (i+1) % 10 == 0:
+        valid_loss_lst = []
+        while True:
+            try:
+                image_batch, label_batch = sess.run([valid_loader])[0]
+                valid_feed = {model.image: image_batch,
+                            model.label: label_batch}
+                valid_loss = sess.run(model.loss, feed_dict=valid_feed)
+                valid_loss_lst.append(valid_loss)
+            except tf.errors.OutOfRangeError:
+                break
+
+        print('valid_loss: {}'.format(sum(valid_loss_lst)/len(valid_loss_lst)))
+            
+
+
 
