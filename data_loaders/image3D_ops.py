@@ -169,3 +169,46 @@ def random_rotate(image, name=None, seed=None):
             lambda: image,
             name=scope)
         return fix_image_flip_shape(image, result)
+
+def central_crop(image, crop_size):
+    """Crop the central region of the image.
+    Remove the outer parts of an image but retain the central region of the image
+    along each dimension. If we specify central_fraction = 0.5, this function
+    returns the region marked with "X" in the below diagram.
+        --------
+        |        |
+        |  XXXX  |
+        |  XXXX  |
+        |        |   where "X" is the central 50% of the image.
+        --------
+    Args:
+        image: 3-D float Tensor of shape [height, width, depth]
+        central_fraction: float (0, 1], fraction of size to crop
+    Raises:
+        ValueError: if central_crop_fraction is not within (0, 1].
+    Returns:
+        3-D float Tensor
+    """
+    crop_size_f = [float(i) for i in crop_size]
+    with ops.name_scope(None, 'central_crop', [image]):
+        image = ops.convert_to_tensor(image, name='image')
+        
+
+        img_shape = array_ops.shape(image)
+        depth = image.get_shape()[3]
+        img_h = math_ops.to_double(img_shape[0])
+        img_w = math_ops.to_double(img_shape[1])
+        img_d = math_ops.to_double(img_shape[2])
+        bbox_h_start = math_ops.to_int32((img_h - crop_size_f[0]) / 2)
+        bbox_w_start = math_ops.to_int32((img_w - crop_size_f[1]) / 2)
+        bbox_d_start = math_ops.to_int32((img_d - crop_size_f[2]) / 2)
+
+        bbox_start = [bbox_h_start, bbox_w_start, bbox_d_start]
+
+        bbox_begin = array_ops.stack(bbox_start + [0])
+        bbox_size = array_ops.stack(crop_size + [-1])
+        image = array_ops.slice(image, bbox_begin, bbox_size)
+
+        # The first two dimensions are dynamic and unknown.
+        image.set_shape([None, None, None, depth])
+        return image

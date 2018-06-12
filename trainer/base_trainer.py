@@ -14,14 +14,15 @@ from data_loaders.data_io import data_loader
 
 import tensorflow as tf
 
-class trainer(object):
+class base_trainer(object):
 
-    def __init__(self, sess, config):
-        self.sess = sess
-        self.config = config
+    def __init__(self, model):
+        self.model = model
+        
+
+
+        
     
-    def input_data(self):
-        train_loader = data_loader()
 
 class Save_and_load_mode(object):
     def __init__(self, logdir, sess):

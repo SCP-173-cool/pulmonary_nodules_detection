@@ -7,10 +7,19 @@ Created on Fri May 18 23:52:46 2018
 """
 
 import sys
+import os
 sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.abspath('.'))
 
 import tensorflow as tf
-from image3D_ops import *
+from .image3D_ops import *
+
+
+def preprocessing_function(image, label):
+    image = central_crop(image, [36, 36, 20])
+    image = tf.divide(image, tf.constant(255.0, dtype=tf.float32))
+
+    return image, label
 
 
 def augmentation_function(image, label):
@@ -25,6 +34,7 @@ def augmentation_function(image, label):
     image = tf.image.random_brightness(image, 0.3)
 
     return image, label
+
 
 
 def parse_function(example_proto):
@@ -62,9 +72,13 @@ def data_loader(tfrecord_lst,
 
             if shuffle:
                 new_dataset = new_dataset.shuffle(buffer_size=100000)
+
             if augmentation:
                 new_dataset = new_dataset.map(augmentation_function,
                                     num_parallel_calls=num_processors)
+            else:
+                new_dataset = new_dataset.map(preprocessing_function, 
+                                        num_parallel_calls=num_processors)
             new_dataset = new_dataset.repeat(num_repeat)
             new_dataset = new_dataset.batch(batch_size)
 
@@ -77,7 +91,7 @@ def data_loader(tfrecord_lst,
 
 if __name__ == '__main__':
     train_tfrecord_lst = ['../output/LUNA/train.tfrecord']
-    test_tfrecord_lst = ['../output/LUNA/test.tfrecord']
+    test_tfrecord_lst = ['../output/LUNA/valid.tfrecord']
     train_loader = data_loader(train_tfrecord_lst,
                                num_repeat=1,
                                shuffle=True,
@@ -97,14 +111,15 @@ if __name__ == '__main__':
 
 
     sess = tf.InteractiveSession()
-    sess.run(train_loader.initializer)
+    sess.run(test_loader.initializer)
+    test_pipeline = test_loader.get_next()
     for i in range(2200):
         try:
-            image, label = sess.run([train_loader.get_next()])[0]
+            image, label = sess.run([test_pipeline])[0]
             print(sum(label), image.shape)
         except tf.errors.OutOfRangeError:
-            print 'OOR'
-            sess.run(train_loader.initializer)
+            print('OOR')
+            sess.run(test_loader.initializer)
     writer = tf.summary.FileWriter('test', sess.graph)
     sess.close()
     writer.close()
