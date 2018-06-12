@@ -27,4 +27,5 @@ config_test_dataloader = {'tfrecord_lst': [os.path.abspath('output/LUNA/test.tfr
 
 config_model = {'input_shape':[36, 36, 20], 'num_channel':1}
 
-config_train = {'steps_per_epoch': 10}
+config_train = {'steps_per_epoch': 10, 'epochs':10}
+config_valid = {'validation_loop':5}

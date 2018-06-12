@@ -49,6 +49,30 @@ class MODEL(object):
 
             self.all_loss = self.likelihood_loss + self.negative_feature_loss
 
+        with tf.variable_scope("matrix", reuse=reuse):
+            self.accuracy = tf.metrics.accuracy(self.label, self.y_, name='Accuracy')
+            self.auc = tf.metrics.auc(self.label, self.y_, name='AUC')
+            self.precision = tf.metrics.precision_at_thresholds(self.label, self.y_, 0.5, name='Precision')
+            self.recall = tf.metrics.recall_at_thresholds(self.label, self.y_, 0.5, name='Recall')
+
+        with tf.variable_scope("view_summary"):
+            pos_index = tf.where(self.label==1)
+            neg_index = tf.where(self.label==0)
+            
+            with tf.variable_scope("view_image"):
+                mid_num = int(self.input_shape[2]/2)
+                pos_batch = tf.gather_nd(self.image, pos_index)
+                neg_batch = tf.gather_nd(self.image, neg_index)
+
+                self.pos_image = pos_batch[:, :, :, mid_num-1:mid_num+2, 0]
+                self.neg_image = neg_batch[:, :, :, mid_num-1:mid_num+2, 0]
+            
+            with tf.variable_scope("view_features"):
+                self.pos_features = tf.gather_nd(self.output, pos_index)
+                self.neg_features = tf.gather_nd(self.output, neg_index)
+
+
+
 
 
 if __name__ == '__main__':
