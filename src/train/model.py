@@ -56,8 +56,8 @@ class MODEL(object):
             self.recall = tf.metrics.recall_at_thresholds(self.label, self.y_, 0.5, name='Recall')
 
         with tf.variable_scope("view_summary"):
-            pos_index = tf.where(self.label==1)
-            neg_index = tf.where(self.label==0)
+            pos_index = tf.where(tf.equal(self.label, 1))
+            neg_index = tf.where(tf.equal(self.label, 0))
             
             with tf.variable_scope("view_image"):
                 mid_num = int(self.input_shape[2]/2)

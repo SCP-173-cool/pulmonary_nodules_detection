@@ -85,8 +85,8 @@ class base_trainer(object):
         summary_tool.hist_summary('Predict_prob', self.model.probability)
         summary_tool.hist_summary('pos_features', self.model.pos_features)
         summary_tool.hist_summary('neg_features', self.model.neg_features)
-        summary_tool.image_summary('pos_image', self.model.pos_image)
-        summary_tool.image_summary('neg_image', self.model.neg_image)
+        summary_tool.image_summary('pos_image', self.model.pos_image, max_outputs=2)
+        summary_tool.image_summary('neg_image', self.model.neg_image, max_outputs=2)
 
         self.summary_ops = summary_tool.merge_all_summary()
 
@@ -94,6 +94,7 @@ class base_trainer(object):
         self._load_data()
         self._load_model(network=alexnet)
         self._summary()
+        
         with tf.variable_scope('trainer'):
             self.tvars = tf.trainable_variables()
             self.lr_placeholder = tf.placeholder_with_default(
@@ -118,7 +119,7 @@ class base_trainer(object):
         self.global_step = 0
         self.mini_accuracy = 0
 
-        for epoch in range(len(config_train['epochs'])):
+        for epoch in range(config_train['epochs']):
             self.epoch = epoch
             self.train_step(sess)
 
