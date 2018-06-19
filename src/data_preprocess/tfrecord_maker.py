@@ -11,7 +11,7 @@ import tensorflow as tf
 import random
 import os
 import argparse
-from .datasets_reader import *
+from datasets_reader import *
 
 
 def parse_args():
@@ -29,11 +29,11 @@ def parse_args():
     parser.add_argument('--outpath', default='/tmp/tfrecord',
                         help='The direction of tfrecord output path.')
 
-    parser.add_argument('--train-pos-num', type=int, default=1,
-                        help='The number of Positive samples augmentation')
+    parser.add_argument('--balance', type=bool, default=True,
+                        help='Need to balance positive and negative samples or not.')
 
-    parser.add_argument('--train-neg-num', type=int, default=1,
-                        help='The number of Negative samples augmentation')
+    parser.add_argument('--augmentation-ratio', type=int, default=1,
+                        help='The ratio of augmentaiton when balance is used.')
 
     parser.add_argument('--box', type=int, nargs='+', default=[40, 40, 24],
                         help='The fetch box from image_arrays')
@@ -69,8 +69,14 @@ def tfrecord_string(image, label):
 
 
 def train_maker(args, dataset):
-    positive_augment_number = args.train_pos_num
-    negative_augment_number = args.train_neg_num
+    if args.balance:
+        pn_ratio = dataset.num_train_neg * 1.0 / dataset.num_train_pos
+        positive_augment_number = int(args.augmentation_ratio * pn_ratio)
+        negative_augment_number = int(args.augmentation_ratio)
+    
+    else:
+        positive_augment_number = 1
+        negative_augment_number = 1
 
     box = args.box
     scale = args.image_scale
@@ -151,13 +157,6 @@ if __name__ == '__main__':
 
     dataset = pulmonary_nodules_dataset(args.dataset_path)
     dataset.check_all()
-    positive_samples_number = len(
-        dataset.candidate_df[dataset.candidate_df[5] == 1])
-    negative_samples_number = len(
-        dataset.candidate_df[dataset.candidate_df[5] == 0])
-
-    print("The positive samples number is {}".format(positive_samples_number))
-    print("the negative samples number is {}".format(negative_samples_number))
 
     if not os.path.exists(args.outpath):
         os.system('mkdir {}'.format(args.outpath))

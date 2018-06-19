@@ -158,7 +158,10 @@ class pulmonary_nodules_dataset(object):
     
         
         print('\nAll checks finished !')
-
+        print('The number of trainset positive samples is {}'.format(self.num_train_pos))
+        print('The number of trainset negative samples is {}'.format(self.num_train_neg))
+        print('The number of testset positive samples is {}'.format(self.num_test_pos))
+        print('The number of testset negative samples is {}'.format(self.num_test_neg))
 
     def read_images_meta(self, scan_id):
         message_df = self.index_df[self.index_df[0] == scan_id]
