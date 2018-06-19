@@ -7,18 +7,14 @@ Created on Fri May 18 23:52:46 2018
 """
 import sys
 sys.dont_write_bytecode = True
-sys.path.insert(0, '../utils')
-
-import numpy as np
 import tensorflow as tf
-import os
 import random
+import os
 import argparse
-from datasets_reader import *
+from .datasets_reader import *
 
 
 def parse_args():
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Create tensorflow record files \
@@ -73,7 +69,6 @@ def tfrecord_string(image, label):
 
 
 def train_maker(args, dataset):
-
     positive_augment_number = args.train_pos_num
     negative_augment_number = args.train_neg_num
 
@@ -86,8 +81,8 @@ def train_maker(args, dataset):
         os.path.join(output_path, 'train.tfrecord'))
     valid_writer = tf.python_io.TFRecordWriter(
         os.path.join(output_path, 'valid.tfrecord'))
-    
-    print("Start making TRAIN and VALIDATION tensorflow record.")
+
+    print("Start making TRAIN and VALIDATION Tensorflow record.")
     print("Starting ...\n")
 
     for train_scan_id in dataset.train_scanID_lst[:2]:
@@ -117,18 +112,17 @@ def train_maker(args, dataset):
     train_writer.close()
     valid_writer.close()
 
-    print("The TRAIN and VALIDATION tensorflow record are finished.")
+    print("The TRAIN and VALIDATION Tensorflow record are finished.")
 
 
 def test_maker(args, dataset):
-    
     box = args.box
     scale = args.image_scale
     output_path = os.path.join(args.outpath, args.name)
 
     test_writer = tf.python_io.TFRecordWriter(
         os.path.join(output_path, 'test.tfrecord'))
-    
+
     print("Start making TEST tensorflow record.")
     print("Starting ...\n")
 
@@ -147,9 +141,10 @@ def test_maker(args, dataset):
 
             test_writer.write(tf_serialized)
         print('{} is completed.'.format(test_scan_id))
-    
+
     test_writer.close()
     print("The TEST tensorflow record are finished.")
+
 
 if __name__ == '__main__':
     args = parse_args()

@@ -3,11 +3,11 @@
 """
 Created on Fri May 18 23:52:46 2018
 
-@author: loktar
+@author: loktarxiao
 """
 
 import sys
-sys.dont_write_bytecode = True
+sys.dont_write_bytecode = True  # will not create *.pyc file
 
 import pydicom as dcm
 import SimpleITK as sitk
@@ -23,6 +23,18 @@ from scipy.ndimage.interpolation import zoom
 
 
 def _check_filepath(filepath, name, raiseout=False, printout=True):
+    """check if any file exists and print message of the file.
+
+    Args:
+        filepath: string, the path of file which you want to check if exists.
+        name: string, file name which you want print out.
+        raiseout: bool, whether raise Error and break out when doesn't exists, default False.
+        printout: bool, control the printed messages, default True.
+
+    Rets:
+        _: bool, if exists the file in `filepath`
+
+    """
     if os.path.exists(filepath):
         if printout:
             print('[PASS] The {} path is {}'.format(name, filepath))
@@ -36,8 +48,10 @@ def _check_filepath(filepath, name, raiseout=False, printout=True):
 
 
 class pulmonary_nodules_dataset(object):
+    """Tool of reading pulmonary nodules standard dataset
+    """
 
-    def __init__(self, dataset_path,):
+    def __init__(self, dataset_path, ):
         self.root_path = dataset_path
         self.data_path = os.path.join(self.root_path, 'Data')
         self.meta_path = os.path.join(self.root_path, 'Meta')
@@ -71,6 +85,7 @@ class pulmonary_nodules_dataset(object):
                 set(pd.read_csv(self.testset_file, header=None, sep='\t')[0].values))
             self.train_scanID_lst = [
                 scan_id for scan_id in self.all_scanID_lst if scan_id not in self.test_scanID_lst]
+
         else:
             self.test_scanID_lst = []
             self.train_scanID_lst = self.all_scanID_lst
@@ -94,29 +109,56 @@ class pulmonary_nodules_dataset(object):
         # file check
         print('Checking data files...')
         time.sleep(0.5)
+
+        # Train set processing
+        self.num_train_neg = 0
+        self.num_train_pos = 0
         del_lst = []
         for scan_id in self.train_scanID_lst:
             filepath = os.path.join(self.root_path, scan_id)
             res = _check_filepath(filepath, 'nodules file', printout=False)
             if not res:
                 del_lst.append(scan_id)
+            else:
+                tmp_df = self.candidate_df[self.candidate_df[0] == scan_id]
+                self.num_train_neg += len(tmp_df[tmp_df[5]==0])
+                self.num_train_pos += len(tmp_df[tmp_df[5]==1])
+
         self.train_scanID_lst = [
             i for i in self.train_scanID_lst if i not in del_lst]
         self.all_scanID_lst = [
             i for i in self.all_scanID_lst if i not in del_lst]
 
+        for scan_id in del_lst:
+            self.candidate_df = self.candidate_df[~(
+                self.candidate_df[0] == scan_id)]
+
+        # Test set processing
+        self.num_test_neg = 0
+        self.num_test_pos = 0
         del_lst = []
         for scan_id in self.test_scanID_lst:
             filepath = os.path.join(self.root_path, scan_id)
             res = _check_filepath(filepath, 'nodules file', printout=False)
             if not res:
                 del_lst.append(scan_id)
+            else:
+                tmp_df = self.candidate_df[self.candidate_df[0] == scan_id]
+                self.num_test_neg += len(tmp_df[tmp_df[5]==0])
+                self.num_test_pos += len(tmp_df[tmp_df[5]==1])
+
         self.test_scanID_lst = [
             i for i in self.test_scanID_lst if i not in del_lst]
         self.all_scanID_lst = [
             i for i in self.all_scanID_lst if i not in del_lst]
 
+        for scan_id in del_lst:
+            self.candidate_df = self.candidate_df[~(
+                self.candidate_df[0] == scan_id)]
+    
+        
         print('\nAll checks finished !')
+
 
     def read_images_meta(self, scan_id):
         message_df = self.index_df[self.index_df[0] == scan_id]
@@ -136,7 +178,7 @@ class pulmonary_nodules_dataset(object):
         if rescale == -1:
             new_spacing = images_spacing
         elif rescale > 0:
-            new_spacing = np.ones(3)*images_spacing[0]*1.0/rescale
+            new_spacing = np.ones(3) * images_spacing[0] * 1.0 / rescale
         else:
             raise Exception
 
@@ -255,9 +297,9 @@ def nodules_reader_2D(images_array, coord, r=22):
     z = int(round(coord[2]))
 
     if images_array.shape[-1] == 3 and images_array.ndim == 4:
-        nodules = images_array[z, x-r:x+r, y-r:y+r, :]
+        nodules = images_array[z, x - r:x + r, y - r:y + r, :]
     elif images_array.ndim == 3:
-        nodules = images_array[x-r:x+r, y-r:y+r, z]
+        nodules = images_array[x - r:x + r, y - r:y + r, z]
     else:
         print(
             "Wrong type! The image shape should be [z, x, y ,3] or [x, y, z]")
@@ -269,12 +311,12 @@ def nodules_reader_3D(images_array, coord, box=[22, 22, 22]):
     x = int(round(coord[1]))
     y = int(round(coord[0]))
     z = int(round(coord[2]))
-    box = np.array(box)/2
+    box = np.array(box) / 2
     box = box.astype(np.int64)
 
     if images_array.ndim == 3:
-        nodules = images_array[x-box[0]:x+box[0],
-                               y-box[1]:y+box[1], z-box[2]:z+box[2]]
+        nodules = images_array[x - box[0]:x + box[0],
+                               y - box[1]:y + box[1], z - box[2]:z + box[2]]
     else:
         print("Wrong type! The image shape should be [x, y, z]")
         return None
@@ -301,7 +343,6 @@ def worldToVoxelCoord(worldCoord, origin, spacing):
 
 
 def resample(imgs, spacing, new_spacing):
-
     new_shape = np.round(imgs.shape * spacing / new_spacing)
     resize_factor = new_shape / imgs.shape
     with warnings.catch_warnings():
@@ -317,14 +358,14 @@ def label_message_image_series(images, message, color=0, z_range=0):
     images = images.copy()
     for mess in message:
         z = int(round(mess[2]))
-        lst = list(range(max(0, z-z_range),
-                         min(images.shape[2], z+z_range)))
+        lst = list(range(max(0, z - z_range),
+                         min(images.shape[2], z + z_range)))
         wh = int(round(mess[3]))
-        x = int(round(mess[0] - wh/2))
-        y = int(round(mess[1] - wh/2))
+        x = int(round(mess[0] - wh / 2))
+        y = int(round(mess[1] - wh / 2))
 
         for z in lst:
-            cv2.rectangle(images[z], (x, y), (x+wh, y+wh), color, 1)
+            cv2.rectangle(images[z], (x, y), (x + wh, y + wh), color, 1)
         save_lst += lst
 
     return images, save_lst
@@ -348,13 +389,15 @@ def images2tif(images, save_dir, duration=0.05):
 
 
 if __name__ == "__main__":
-
     dataset = pulmonary_nodules_dataset('/data/pulmonary_nodules/LUNA')
     dataset.check_all()
+    import pdb; pdb.set_trace()
+    """
     scan_id = dataset.all_scanID_lst[0]
     images, resize_factor = dataset.read_images_array(scan_id, rescale=1)
     message = dataset.read_voxel_labels(scan_id, resize_factor)
     gt_message = dataset.read_GT_labels(scan_id, resize_factor)
+    """
 
     """
     images_new = np.transpose(
@@ -370,6 +413,6 @@ if __name__ == "__main__":
     for z in tqdm(save_lst):
         io.imsave('output/{}.png'.format(str(z)), images_new[z])
     """
-    #images2tif(images_new, 'new.gif', duration=0.1)
+    # images2tif(images_new, 'new.gif', duration=0.1)
 
-    nodules = nodules_reader_3D(images, message[0], box = [22, 22, 22])
+    #nodules = nodules_reader_3D(images, message[0], box=[22, 22, 22])

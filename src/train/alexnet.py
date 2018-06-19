@@ -8,6 +8,7 @@ Created on Fri May 18 23:52:46 2018
 
 import tensorflow as tf
 
+
 def _conv3d(input_tensor, ksize, num_filter, name):
     initializer = tf.contrib.layers.xavier_initializer()
     regularizer = tf.nn.l2_loss
@@ -15,22 +16,25 @@ def _conv3d(input_tensor, ksize, num_filter, name):
     activity_regularizer = tf.layers.batch_normalization
 
     output = tf.layers.conv3d(input_tensor, num_filter, ksize,
-                padding = 'SAME',
-                activation = activition,
-                activity_regularizer = activity_regularizer,
-                kernel_initializer = initializer,
-                kernel_regularizer = regularizer,
-                name = name)
+                              padding='SAME',
+                              activation=activition,
+                              activity_regularizer=activity_regularizer,
+                              kernel_initializer=initializer,
+                              kernel_regularizer=regularizer,
+                              name=name)
     return output
+
 
 def _maxpool3d(input_tensor, pool_size, stride, name):
     output = tf.layers.max_pooling3d(input_tensor, pool_size,
-                    strides = stride, name=name)
+                                     strides=stride, name=name)
     return output
+
 
 def _dropout(input_tensor, drop_rate):
     output = tf.layers.dropout(input_tensor, rate=drop_rate, name='dropout')
     return output
+
 
 def _conv_block(input_tensor, num_filter, block_name, drop_rate=0, reuse=None):
     with tf.variable_scope(block_name, reuse=reuse):
@@ -40,10 +44,11 @@ def _conv_block(input_tensor, num_filter, block_name, drop_rate=0, reuse=None):
         output = _dropout(maxpool, drop_rate)
     return output
 
+
 def alexnet(input_tensor, reuse=None):
     with tf.variable_scope("alexnet", reuse=reuse):
         block1 = _conv_block(input_tensor, 32, "conv_block1")
         block2 = _conv_block(block1, 64, "conv_block2")
         block3 = _conv_block(block2, 128, "conv_block3")
-    
+
     return block3
