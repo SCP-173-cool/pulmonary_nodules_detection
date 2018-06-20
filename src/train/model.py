@@ -41,13 +41,13 @@ class MODEL(object):
             self.probability = tf.nn.sigmoid(self.y_)
 
         with tf.variable_scope("loss", reuse=reuse):
-            self.negative_feature_loss = tf.reduce_mean(
+            self.neg_feat_loss = tf.reduce_mean(
                 tf.reduce_sum(tf.square(self.output), axis=1) * (1 - self.label))
             self.likelihood_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 labels=self.label, logits=self.y_)
             self.likelihood_loss = tf.reduce_mean(self.likelihood_loss)
 
-            self.all_loss = self.likelihood_loss + self.negative_feature_loss
+            self.all_loss = self.likelihood_loss + self.neg_feat_loss
 
         with tf.variable_scope("matrix", reuse=reuse):
             self.accuracy = tf.metrics.accuracy(self.label, self.y_, name='Accuracy')

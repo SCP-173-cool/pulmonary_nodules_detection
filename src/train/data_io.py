@@ -12,7 +12,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.abspath('.'))
 
 import tensorflow as tf
-from .image3D_ops import *
+from image3D_ops import *
 
 
 def preprocessing_function(image, label):
@@ -90,8 +90,8 @@ def data_loader(tfrecord_lst,
 
 
 if __name__ == '__main__':
-    train_tfrecord_lst = ['../output/LUNA/train.tfrecord']
-    test_tfrecord_lst = ['../output/LUNA/valid.tfrecord']
+    train_tfrecord_lst = ['../../output/tfrecords/LUNA/train.tfrecord']
+    test_tfrecord_lst = ['../../output/tfrecords/LUNA/valid.tfrecord']
     train_loader = data_loader(train_tfrecord_lst,
                                num_repeat=1,
                                shuffle=True,
@@ -103,10 +103,10 @@ if __name__ == '__main__':
 
     test_loader = data_loader(test_tfrecord_lst,
                                num_repeat=1,
-                               shuffle=False,
-                               batch_size=1,
+                               shuffle=True,
+                               batch_size=24,
                                num_processors=4,
-                               augmentation=False,
+                               augmentation=True,
                                name='test_dataloader')
 
 
