@@ -13,16 +13,8 @@ sys.dont_write_bytecode = True
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '4'
 
-from model import MODEL
-from alexnet import alexnet
-from data_io import data_loader
-
 import tensorflow as tf
-import numpy as np
-
-from config import *
-
-from visualization import TensorBoard
+from trainer import base_trainer
 
 
 

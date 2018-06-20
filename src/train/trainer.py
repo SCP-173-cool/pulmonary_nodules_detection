@@ -144,6 +144,7 @@ class base_trainer(object):
                        self.model.auc, self.model.recall, self.model.precision]
             _, summary, loss, neg_loss, acc, auc, recall, precision = sess.run(
                 run_lst, feed_dict=train_feed)
+            sess.run([self.model.accuracy_op, self.model.auc_op, self.precision_op, self.recall_op])
             self.writer.add_summary(summary, self.global_step)
             print("\r epoch: {}, loss: {}, neg_loss:{}, accuracy:{}, AUC:{}, precision:{}, recall:{}".format(
                 self.epoch, loss, neg_loss, acc, auc, precision, recall), end='\r')
