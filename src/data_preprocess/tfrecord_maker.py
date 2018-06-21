@@ -139,12 +139,13 @@ def test_maker(args, dataset):
 
         for i in range(len(message)):
             nodules = nodules_reader_3D(images, message[i], box)
+            if nodules.shape != tuple(box):
+                print('{} not match box'.format(nodules.shape))
+                continue
             nodules = np.expand_dims(nodules, axis=3)
             label = int(message[i][4])
-            if nodules.shape[-2] < box[2]:
-                continue
             tf_serialized = tfrecord_string(nodules, label)
-
+            
             test_writer.write(tf_serialized)
         print('{} is completed.'.format(test_scan_id))
 
@@ -163,5 +164,9 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.outpath, args.name)):
         os.system('mkdir {}'.format(os.path.join(args.outpath, args.name)))
 
-    train_maker(args, dataset)
-    test_maker(args, dataset)
+    #train_maker(args, dataset)
+    #test_maker(args, dataset)
+    print(args.box)
+    import numpy as np
+    tt = np.random.rand(40,40,24)
+    print(tt.shape == tuple(args.box))
