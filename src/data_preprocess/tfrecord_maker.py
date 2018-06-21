@@ -91,7 +91,7 @@ def train_maker(args, dataset):
     print("Start making TRAIN and VALIDATION Tensorflow record.")
     print("Starting ...\n")
 
-    for train_scan_id in dataset.train_scanID_lst[:2]:
+    for train_scan_id in dataset.train_scanID_lst[:]:
         images, resize_factor = dataset.read_images_array(
             train_scan_id, rescale=scale)
         message = dataset.read_voxel_labels(train_scan_id, resize_factor)
@@ -111,8 +111,7 @@ def train_maker(args, dataset):
             
             nodules = np.expand_dims(nodules, axis=3)
             label = int(mess_lst[i][4])
-            if nodules.shape[-2] < box[2]:
-                continue
+
             tf_serialized = tfrecord_string(nodules, label)
 
             if i < edge:
@@ -137,7 +136,7 @@ def test_maker(args, dataset):
     print("Start making TEST tensorflow record.")
     print("Starting ...\n")
 
-    for test_scan_id in dataset.test_scanID_lst[:2]:
+    for test_scan_id in dataset.test_scanID_lst[:]:
         images, resize_factor = dataset.read_images_array(
             test_scan_id, rescale=scale)
         message = dataset.read_voxel_labels(test_scan_id, resize_factor)
@@ -171,9 +170,5 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.outpath, args.name)):
         os.system('mkdir {}'.format(os.path.join(args.outpath, args.name)))
 
-    #train_maker(args, dataset)
-    #test_maker(args, dataset)
-    print(args.box)
-    import numpy as np
-    tt = np.random.rand(40,40,24)
-    print(tt.shape == tuple(args.box))
+    train_maker(args, dataset)
+    test_maker(args, dataset)
