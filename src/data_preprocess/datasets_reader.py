@@ -314,12 +314,22 @@ def nodules_reader_3D(images_array, coord, box=[22, 22, 22]):
     x = int(round(coord[1]))
     y = int(round(coord[0]))
     z = int(round(coord[2]))
-    box = np.array(box) / 2
+    box_size = box
+    box = np.array(box_size) / 2
     box = box.astype(np.int64)
 
+    x_1 = max(0, x - box[0])
+    x_2 = min(images_array.shape[0], x + box[0]+1)
+    y_1 = max(0, y - box[1])
+    y_2 = min(images_array.shape[1], y + box[1]+1)
+    z_1 = max(0, z - box[2])
+    z_2 = min(images_array.shape[2], z + box[2]+1)
+
+    padding = np.zeros(box_size)
     if images_array.ndim == 3:
-        nodules = images_array[x - box[0]:x + box[0],
-                               y - box[1]:y + box[1], z - box[2]:z + box[2]]
+        nodules = images_array[x_1:x_2, y_1:y_2, z_1:z_2]
+        padding[0:nodules.shape[0], 0:nodules.shape[1], 0:nodules.shape[2]] = nodules
+        nodules = padding.copy()
     else:
         print("Wrong type! The image shape should be [x, y, z]")
         return None

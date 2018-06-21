@@ -104,6 +104,11 @@ def train_maker(args, dataset):
 
         for i in range(len(mess_lst)):
             nodules = nodules_reader_3D(images, mess_lst[i], box)
+
+            if nodules.shape != tuple(box):
+                print('{} not match box'.format(nodules.shape))
+                continue
+            
             nodules = np.expand_dims(nodules, axis=3)
             label = int(mess_lst[i][4])
             if nodules.shape[-2] < box[2]:
@@ -139,13 +144,15 @@ def test_maker(args, dataset):
 
         for i in range(len(message)):
             nodules = nodules_reader_3D(images, message[i], box)
+
             if nodules.shape != tuple(box):
                 print('{} not match box'.format(nodules.shape))
                 continue
+
             nodules = np.expand_dims(nodules, axis=3)
             label = int(message[i][4])
             tf_serialized = tfrecord_string(nodules, label)
-            
+
             test_writer.write(tf_serialized)
         print('{} is completed.'.format(test_scan_id))
 
