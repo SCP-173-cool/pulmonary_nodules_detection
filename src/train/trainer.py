@@ -6,6 +6,7 @@ Created on Fri May 18 23:52:46 2018
 @author: loktarxiao
 """
 
+from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 
@@ -82,6 +83,7 @@ class base_trainer(object):
             print('Restore Sucessful!')
         except:
             sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
             print('Restore Failed!')
 
     def train(self, sess):
@@ -144,7 +146,7 @@ class base_trainer(object):
                        self.model.auc, self.model.recall, self.model.precision]
             _, summary, loss, neg_loss, acc, auc, recall, precision = sess.run(
                 run_lst, feed_dict=train_feed)
-            sess.run([self.model.accuracy_op, self.model.auc_op, self.precision_op, self.recall_op])
+            sess.run([self.model.accuracy_op, self.model.auc_op, self.model.precision_op, self.model.recall_op], feed_dict=train_feed)
             self.writer.add_summary(summary, self.global_step)
             print("\r epoch: {}, loss: {}, neg_loss:{}, accuracy:{}, AUC:{}, precision:{}, recall:{}".format(
                 self.epoch, loss, neg_loss, acc, auc, precision, recall), end='\r')
@@ -159,6 +161,7 @@ class base_trainer(object):
 
     def valid_step(self, sess):
         result_lst = []
+        sess.run(self.valid_iterator.initializer)
         while True:
             try:
                 image_batch, label_batch = sess.run([self.valid_loader])[0]

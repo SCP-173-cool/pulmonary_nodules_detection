@@ -50,10 +50,10 @@ class MODEL(object):
             self.all_loss = self.likelihood_loss + self.neg_feat_loss
 
         with tf.variable_scope("matrix", reuse=reuse):
-            self.accuracy, self.accuracy_op = tf.metrics.accuracy(self.label, self.y_, name='Accuracy')
-            self.auc, self.auc_op = tf.metrics.auc(self.label, self.y_, name='AUC')
-            self.precision, self.precision_op = tf.metrics.precision_at_thresholds(self.label, self.y_, 0.5, name='Precision')
-            self.recall, self.recall_op = tf.metrics.recall_at_thresholds(self.label, self.y_, 0.5, name='Recall')
+            self.accuracy, self.accuracy_op = tf.metrics.accuracy(self.label, self.probability, name='Accuracy')
+            self.auc, self.auc_op = tf.metrics.auc(self.label, self.probability, name='AUC')
+            self.precision, self.precision_op = tf.metrics.precision(self.label, self.probability, name='Precision')
+            self.recall, self.recall_op = tf.metrics.recall(self.label, self.probability, name='Recall')
 
         with tf.variable_scope("view_summary"):
             pos_index = tf.where(tf.equal(self.label, 1))

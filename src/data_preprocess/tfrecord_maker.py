@@ -91,7 +91,7 @@ def train_maker(args, dataset):
     print("Start making TRAIN and VALIDATION Tensorflow record.")
     print("Starting ...\n")
 
-    for train_scan_id in dataset.train_scanID_lst[:]:
+    for train_scan_id in dataset.train_scanID_lst[:5]:
         images, resize_factor = dataset.read_images_array(
             train_scan_id, rescale=scale)
         message = dataset.read_voxel_labels(train_scan_id, resize_factor)
@@ -136,7 +136,7 @@ def test_maker(args, dataset):
     print("Start making TEST tensorflow record.")
     print("Starting ...\n")
 
-    for test_scan_id in dataset.test_scanID_lst[:]:
+    for test_scan_id in dataset.test_scanID_lst[:5]:
         images, resize_factor = dataset.read_images_array(
             test_scan_id, rescale=scale)
         message = dataset.read_voxel_labels(test_scan_id, resize_factor)
