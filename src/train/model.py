@@ -10,6 +10,7 @@ import sys
 sys.dont_write_bytecode = True
 import tensorflow as tf
 import numpy as np
+from metrics import *
 
 
 class MODEL(object):
@@ -50,10 +51,10 @@ class MODEL(object):
             self.all_loss = self.likelihood_loss + self.neg_feat_loss
 
         with tf.variable_scope("matrix", reuse=reuse):
-            self.accuracy, self.accuracy_op = tf.metrics.accuracy(self.label, self.probability, name='Accuracy')
-            self.auc, self.auc_op = tf.metrics.auc(self.label, self.probability, name='AUC')
-            self.precision, self.precision_op = tf.metrics.precision(self.label, self.probability, name='Precision')
-            self.recall, self.recall_op = tf.metrics.recall(self.label, self.probability, name='Recall')
+            self.accuracy = tf_accuracy(self.label, self.probability)
+            self.precision = tf_precision(self.label, self.probability)
+            self.recall = tf_recall(self.label, self.probability)
+            self.f1_score = tf_f1(self.label, self.probability)
 
         with tf.variable_scope("view_summary"):
             pos_index = tf.where(tf.equal(self.label, 1))
@@ -80,11 +81,11 @@ if __name__ == '__main__':
     from data_io import data_loader
     from alexnet import alexnet
 
-    train_tfrecord_lst = ['../output/LUNA/train.tfrecord']
+    train_tfrecord_lst = ['../../output/tfrecords/LUNA/train.tfrecord']
     train_iterator = data_loader(train_tfrecord_lst,
                                num_repeat=1,
                                shuffle=True,
-                               batch_size=2,
+                               batch_size=6,
                                num_processors=4,
                                augmentation=True,
                                name='train_dataloader')
@@ -100,7 +101,8 @@ if __name__ == '__main__':
         try:
             image, label = sess.run([train_loader])[0]
             feed_dict = {model.image: image, model.label: label}
-            loss, prob = sess.run([model.all_loss, model.probability], feed_dict=feed_dict)
+            loss, prob, precision, recall, accuracy = sess.run([model.all_loss, model.probability, model.precision, model.recall, model.accuracy], feed_dict=feed_dict)
             print(loss, prob)
+            print(precision, recall, accuracy)
         except tf.errors.OutOfRangeError:
             break

@@ -63,7 +63,6 @@ class base_trainer(object):
         summary_tool.scalar_summary('All_loss', self.model.all_loss)
         summary_tool.scalar_summary('negative_loss', self.model.neg_feat_loss)
         summary_tool.scalar_summary('Accuracy', self.model.accuracy)
-        summary_tool.scalar_summary('AUC', self.model.auc)
         summary_tool.scalar_summary('Recall', self.model.recall)
         summary_tool.scalar_summary('Precision', self.model.precision)
         summary_tool.hist_summary('Predict_prob', self.model.probability)
@@ -100,7 +99,7 @@ class base_trainer(object):
         with tf.variable_scope('Trainer'):
 
             self.lr_placeholder = tf.placeholder_with_default(
-                0.01, shape=[], name='learning_rate')
+                0.1, shape=[], name='learning_rate')
             self.tvars = tf.trainable_variables()
 
             self.grads = tf.gradients(self.model.all_loss, self.tvars)
@@ -131,7 +130,9 @@ class base_trainer(object):
         self.writer.close()
 
     def train_step(self, sess):
-
+        accuracy_lst = []
+        precision_lst = []
+        recall_lst = []
         for step in range(config_train['steps_per_epoch']):
             try:
                 image_batch, label_batch = sess.run([self.train_loader])[0]
@@ -143,15 +144,17 @@ class base_trainer(object):
                           self.lr_placeholder: 0.001}
             run_lst = [self.train_op, self.summary_ops, self.model.likelihood_loss,
                        self.model.neg_feat_loss, self.model.accuracy,
-                       self.model.auc, self.model.recall, self.model.precision]
-            _, summary, loss, neg_loss, acc, auc, recall, precision = sess.run(
+                       self.model.recall, self.model.precision]
+            _, summary, loss, neg_loss, acc, recall, precision = sess.run(
                 run_lst, feed_dict=train_feed)
-            sess.run([self.model.accuracy_op, self.model.auc_op, self.model.precision_op, self.model.recall_op], feed_dict=train_feed)
+            accuracy_lst.append(acc)
+            recall_lst.append(recall)
+            precision_lst.append(precision)
             self.writer.add_summary(summary, self.global_step)
-            print("\r epoch: {}, loss: {}, neg_loss:{}, accuracy:{}, AUC:{}, precision:{}, recall:{}".format(
-                self.epoch, loss, neg_loss, acc, auc, precision, recall), end='\r')
+            print("[epoch: {}]: loss: {:.4f}, neg_loss:{:.4f}, accuracy:{:.4f}, precision:{:.4f}, recall:{:.4f}".format(
+                self.epoch, loss, neg_loss, np.mean(accuracy_lst), np.mean(precision_lst), np.mean(recall_lst)))
 
-            if self.global_step % config_valid['validation_loop'] and self.global_step > 0:
+            if self.global_step % config_valid['validation_loop'] == 0 and self.global_step > 0:
                 valid_accuracy = self.valid_step(sess)
                 if valid_accuracy > self.mini_accuracy:
                     self.mini_accuracy = valid_accuracy
@@ -170,13 +173,13 @@ class base_trainer(object):
             valid_feed = {self.model.image: image_batch,
                           self.model.label: label_batch}
             run_lst = [self.model.likelihood_loss, self.model.neg_feat_loss,
-                       self.model.accuracy, self.model.auc, self.model.recall,
+                       self.model.accuracy, self.model.recall,
                        self.model.precision]
             result_lst.append(sess.run(run_lst, feed_dict=valid_feed))
         results = list(np.array(result_lst).sum(axis=0)/len(result_lst))
 
         print("\nvalidatioin process")
-        print("Loss:{}, negative_loss:{}, Accuracy:{}, AUC:{}, Recall:{}, Precision:{}".format(
+        print("Loss:{}, negative_loss:{}, Accuracy:{}, Recall:{}, Precision:{}".format(
             *results))
 
         return results[2]
