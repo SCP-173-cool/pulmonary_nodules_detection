@@ -68,6 +68,9 @@ class base_trainer(object):
         summary_tool.hist_summary('Predict_prob', self.model.probability)
         summary_tool.hist_summary('pos_features', self.model.pos_features)
         summary_tool.hist_summary('neg_features', self.model.neg_features)
+        summary_tool.hist_summary('pos_probability', self.model.pos_prob)
+        summary_tool.hist_summary('neg_probability', self.model.neg_prob)
+        
         summary_tool.image_summary(
             'pos_image', self.model.pos_image, max_outputs=2)
         summary_tool.image_summary(

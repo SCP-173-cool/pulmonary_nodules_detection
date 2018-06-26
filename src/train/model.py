@@ -72,6 +72,10 @@ class MODEL(object):
                 self.pos_features = tf.gather_nd(self.output, pos_index)
                 self.neg_features = tf.gather_nd(self.output, neg_index)
 
+            with tf.variable_scope("view_probability"):
+                self.pos_prob = tf.gather_nd(self.probability, pos_index)
+                self.neg_prob = tf.gather_nd(self.probability, neg_index)
+
 
 
 
